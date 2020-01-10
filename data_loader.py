@@ -11,7 +11,7 @@ from google.colab.patches import cv2_imshow
 import warnings
 warnings.filterwarnings('ignore')
 
-
+IMAGE_ORDERING = 'channels_last'
 DATA_LOADER_SEED = 0
 
 random.seed(DATA_LOADER_SEED)
