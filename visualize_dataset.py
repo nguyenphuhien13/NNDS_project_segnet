@@ -2,6 +2,7 @@ import glob
 import random
 import numpy as np
 import cv2
+from google.colab.patches import cv2_imshow
 
 import sys
 sys.path.append('drive/My Drive/NNDS/project/')
