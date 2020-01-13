@@ -74,3 +74,29 @@ return_images = False):
     
     if return_images:
         return img, seg_img
+    
+def visualize_results(images_path, segs_path, res_path, n_classes,
+                      do_augment=False, no_show=False, ignore_non_matching=False,
+                      return_images = False):
+
+    img_seg_pairs = get_triplet_from_paths(images_path, segs_path, res_path, ignore_non_matching=ignore_non_matching)
+
+    colors = class_colors
+
+    im_fn, seg_fn, res_fn = random.choice(img_seg_pairs)
+
+    img = cv2.imread(im_fn)
+    seg = cv2.imread(seg_fn)
+    res = cv2.imread(res_fn)
+    print("Found the following classes in the segmentation image:", np.unique(seg))
+
+    img,seg_img = _get_colored_segmentation_image(img, seg, colors,n_classes, do_augment=do_augment)
+
+    if not no_show:
+        cv2_imshow(img)
+        cv2_imshow(seg_img)
+        cv2_imshow(res)
+        cv2.waitKey()
+    
+    if return_images:
+        return img, seg_img, res
