@@ -6,7 +6,7 @@ from google.colab.patches import cv2_imshow
 
 import sys
 sys.path.append('drive/My Drive/NNDS/project/')
-from data_loader import get_pairs_from_paths, DATA_LOADER_SEED, class_colors, DataLoaderError
+from data_loader import get_pairs_from_paths, get_triplet_from_paths, DATA_LOADER_SEED, class_colors, DataLoaderError
 
 random.seed(DATA_LOADER_SEED)
 
