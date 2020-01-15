@@ -2,7 +2,7 @@ import glob
 import random
 import numpy as np
 import cv2
-
+import matplotlib.pyplot as plt
 from google.colab.patches import cv2_imshow
 
 import sys
