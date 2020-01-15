@@ -6,97 +6,101 @@ from google.colab.patches import cv2_imshow
 
 import sys
 sys.path.append('drive/My Drive/NNDS/project/')
-from data_loader import get_pairs_from_paths, get_triplet_from_paths, DATA_LOADER_SEED, class_colors, DataLoaderError
+from data_loader import DATA_LOADER_SEED, class_colors
 
 random.seed(DATA_LOADER_SEED)
 
-def _get_colored_segmentation_image(img, seg, colors, n_classes, do_augment=False):
-    """ Return a colored segmented image """
-    seg_img = np.zeros_like(seg)
+def visualize_dataset(images_path, segs_path, n_classes, show_all = False, num_load = 2, colors = colors):
 
-    if do_augment:
-        img, seg[:, :, 0] = augment_seg(img, seg[:, :, 0])
+    images = glob.glob(images_path + "*.jpg") + glob.glob(images_path + "*.png") + glob.glob(images_path + "*.jpeg")
+    images.sort()
+    segmentations = glob.glob(segs_path + "*.jpg") + glob.glob(segs_path + "*.png") + glob.glob(segs_path + "*.jpeg")
+    segmentations.sort()
 
-    for c in range(n_classes):
-        seg_img[:, :, 0] += ((seg[:, :, 0] == c) *
-                            (colors[c][0])).astype('uint8')
-        seg_img[:, :, 1] += ((seg[:, :, 0] == c) *
-                            (colors[c][1])).astype('uint8')
-        seg_img[:, :, 2] += ((seg[:, :, 0] == c) *
-                            (colors[c][2])).astype('uint8')
+    if show_all:
+        for im_fn, seg_fn in zip(images, segmentations):
 
-    return img , seg_img
+            img = cv2.imread(im_fn)
+            seg = cv2.imread(seg_fn)
 
+            seg_img = np.zeros_like(seg)
 
-def visualize_segmentation_dataset(images_path, segs_path, n_classes,
-                                   do_augment=False, ignore_non_matching=False,
-                                   no_show=False):
-    # Get image-segmentation pairs
-    img_seg_pairs = get_pairs_from_paths(images_path, segs_path,
-                        ignore_non_matching=ignore_non_matching)
+            for c in range(n_classes):
+                seg_img[:, :, 0] += ((seg[:, :, 0] == c) * (colors[c][0])).astype('uint8')
+                seg_img[:, :, 1] += ((seg[:, :, 0] == c) * (colors[c][1])).astype('uint8')
+                seg_img[:, :, 2] += ((seg[:, :, 0] == c) * (colors[c][2])).astype('uint8')
 
-    # Get the colors for the classes
-    colors = class_colors
-
-    print("Please press any key to display the next image")
-    for im_fn, seg_fn in img_seg_pairs:
-        img = cv2.imread(im_fn)
-        seg = cv2.imread(seg_fn)
-        print("Found the following classes in the segmentation image:", np.unique(seg))
-        img , seg_img = _get_colored_segmentation_image(img, seg, colors, n_classes, do_augment=do_augment)
-        print("Please press any key to display the next image")
-        cv2_imshow(img)
-        cv2_imshow(seg_img)
-        cv2.waitKey()
-
-
-
-def visualize_segmentation_dataset_one(images_path, segs_path, n_classes,
-                                       do_augment=False, no_show=False, ignore_non_matching=False,
-return_images = False):
-
-    img_seg_pairs = get_pairs_from_paths(images_path, segs_path, ignore_non_matching=ignore_non_matching)
-
-    colors = class_colors
-
-    im_fn, seg_fn = random.choice(img_seg_pairs)
-
-    img = cv2.imread(im_fn)
-    seg = cv2.imread(seg_fn)
-    print("Found the following classes in the segmentation image:", np.unique(seg))
-
-    img,seg_img = _get_colored_segmentation_image(img, seg, colors,n_classes, do_augment=do_augment)
-
-    if not no_show:
-        cv2_imshow(img)
-        cv2_imshow(seg_img)
-        cv2.waitKey()
+            cv2_imshow(img)
+            cv2_imshow(seg_img)
     
-    if return_images:
-        return img, seg_img
+    else:
+        fig, m_axs = plt.subplots(num_load, 2, figsize = (16, 16))
+
+        for (ax1, ax2) in m_axs:
+
+            index = random.randrange(len(images))
+            im_fn, seg_fn = images[index], segmentations[index]
+
+            img = cv2.imread(im_fn)
+            seg = cv2.imread(seg_fn)
+
+            seg_img = np.zeros_like(seg)
+
+            for c in range(n_classes):
+                seg_img[:, :, 0] += ((seg[:, :, 0] == c) * (colors[c][0])).astype('uint8')
+                seg_img[:, :, 1] += ((seg[:, :, 0] == c) * (colors[c][1])).astype('uint8')
+                seg_img[:, :, 2] += ((seg[:, :, 0] == c) * (colors[c][2])).astype('uint8')
+
+            ax1.imshow(img)
+            ax2.imshow(seg_img)
+
+def visualize_results(images_path, segs_path, results_path, n_classes, show_all = False, num_load = 2, colors = colors):
+
+    images = glob.glob(images_path + "*.jpg") + glob.glob(images_path + "*.png") + glob.glob(images_path + "*.jpeg")
+    images.sort()
+    segmentations = glob.glob(segs_path + "*.jpg") + glob.glob(segs_path + "*.png") + glob.glob(segs_path + "*.jpeg")
+    segmentations.sort()
+    results = glob.glob(results_path + "*.jpg") + glob.glob(results_path + "*.png") + glob.glob(results_path + "*.jpeg")
+    results.sort()
+
+    if show_all:
+        for im_fn, seg_fn, res_fn in zip(images, segmentations, results):
+            assert (im_fn.split('/')[-1].split('.')[0] == seg_fn.split('/')[-1].split('.')[0])
+            assert (im_fn.split('/')[-1].split('.')[0] == res_fn.split('/')[-1].split('.')[0])
+
+            img = cv2.imread(im_fn)
+            seg = cv2.imread(seg_fn)
+            res = cv2.imread(res_fn)
+
+            seg_img = np.zeros_like(seg)
+
+            for c in range(n_classes):
+                seg_img[:, :, 0] += ((seg[:, :, 0] == c) * (colors[c][0])).astype('uint8')
+                seg_img[:, :, 1] += ((seg[:, :, 0] == c) * (colors[c][1])).astype('uint8')
+                seg_img[:, :, 2] += ((seg[:, :, 0] == c) * (colors[c][2])).astype('uint8')
+
+            cv2_imshow(img)
+            cv2_imshow(seg_img)
+            cv2_imshow(res)
     
-def visualize_results(images_path, segs_path, res_path, n_classes,
-                      do_augment=False, no_show=False, ignore_non_matching=False,
-                      return_images = False):
+    else:
+        fig, m_axs = plt.subplots(num_load, 3, figsize = (16, 16))
+        for (ax1, ax2, ax3) in m_axs:
 
-    img_seg_pairs = get_triplet_from_paths(images_path, segs_path, res_path, ignore_non_matching=ignore_non_matching)
+            index = random.randrange(len(images))
+            im_fn, seg_fn, res_fn = images[index], segmentations[index], results[index]
 
-    colors = class_colors
+            img = cv2.imread(im_fn)
+            seg = cv2.imread(seg_fn)
+            res = cv2.imread(res_fn)
 
-    im_fn, seg_fn, res_fn = random.choice(img_seg_pairs)
+            seg_img = np.zeros_like(seg)
 
-    img = cv2.imread(im_fn)
-    seg = cv2.imread(seg_fn)
-    res = cv2.imread(res_fn)
-    print("Found the following classes in the segmentation image:", np.unique(seg))
+            for c in range(n_classes):
+                seg_img[:, :, 0] += ((seg[:, :, 0] == c) * (colors[c][0])).astype('uint8')
+                seg_img[:, :, 1] += ((seg[:, :, 0] == c) * (colors[c][1])).astype('uint8')
+                seg_img[:, :, 2] += ((seg[:, :, 0] == c) * (colors[c][2])).astype('uint8')
 
-    img,seg_img = _get_colored_segmentation_image(img, seg, colors,n_classes, do_augment=do_augment)
-
-    if not no_show:
-        cv2_imshow(img)
-        cv2_imshow(seg_img)
-        cv2_imshow(res)
-        cv2.waitKey()
-    
-    if return_images:
-        return img, seg_img, res
+            ax1.imshow(img)
+            ax2.imshow(seg_img)
+            ax3.imshow(res)
