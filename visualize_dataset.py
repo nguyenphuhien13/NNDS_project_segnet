@@ -9,9 +9,8 @@ sys.path.append('drive/My Drive/NNDS/project/')
 from data_loader import DATA_LOADER_SEED, class_colors
 
 random.seed(DATA_LOADER_SEED)
-cclass_colors
 
-def visualize_dataset(images_path, segs_path, n_classes, show_all = False, num_load = 2, colors = colors):
+def visualize_dataset(images_path, segs_path, n_classes, show_all = False, num_load = 2, colors = class_colors):
 
     images = glob.glob(images_path + "*.jpg") + glob.glob(images_path + "*.png") + glob.glob(images_path + "*.jpeg")
     images.sort()
@@ -55,7 +54,7 @@ def visualize_dataset(images_path, segs_path, n_classes, show_all = False, num_l
             ax1.imshow(img)
             ax2.imshow(seg_img)
 
-def visualize_results(images_path, segs_path, results_path, n_classes, show_all = False, num_load = 2, colors = colors):
+def visualize_results(images_path, segs_path, results_path, n_classes, show_all = False, num_load = 2, colors = class_colors):
 
     images = glob.glob(images_path + "*.jpg") + glob.glob(images_path + "*.png") + glob.glob(images_path + "*.jpeg")
     images.sort()
