@@ -19,124 +19,24 @@ class_colors = [(random.randint(0, 255), random.randint(
     0, 255), random.randint(0, 255)) for _ in range(5000)]
 
 
-class DataLoaderError(Exception):
-    pass
-
-def get_pairs_from_paths(images_path, segs_path, ignore_non_matching=False):
-    """ Find all the images from the images_path directory and
-        the segmentation images from the segs_path directory
-        while checking integrity of data """
-
-    ACCEPTABLE_IMAGE_FORMATS = [".jpg", ".jpeg", ".png" , ".bmp"]
-    ACCEPTABLE_SEGMENTATION_FORMATS = [".png", ".bmp"]
-
-    image_files = []
-    segmentation_files = {}
-
-    for dir_entry in os.listdir(images_path):
-        if os.path.isfile(os.path.join(images_path, dir_entry)) and \
-                os.path.splitext(dir_entry)[1] in ACCEPTABLE_IMAGE_FORMATS:
-            file_name, file_extension = os.path.splitext(dir_entry)
-            image_files.append((file_name, file_extension, os.path.join(images_path, dir_entry)))
-
-    for dir_entry in os.listdir(segs_path):
-        if os.path.isfile(os.path.join(segs_path, dir_entry)) and \
-                os.path.splitext(dir_entry)[1] in ACCEPTABLE_SEGMENTATION_FORMATS:
-            file_name, file_extension = os.path.splitext(dir_entry)
-            if file_name in segmentation_files:
-                raise DataLoaderError("Segmentation file with filename {0} already exists and is ambiguous to resolve with path {1}. Please remove or rename the latter.".format(file_name, os.path.join(segs_path, dir_entry)))
-            segmentation_files[file_name] = (file_extension, os.path.join(segs_path, dir_entry))
-
-    return_value = []
-    # Match the images and segmentations
-    for image_file, _, image_full_path in image_files:
-        if image_file in segmentation_files:
-            return_value.append((image_full_path, segmentation_files[image_file][1]))
-        elif ignore_non_matching:
-            continue
-        else:
-            # Error out
-            raise DataLoaderError("No corresponding segmentation found for image {0}.".format(image_full_path))
-
-    return return_value
-
-def get_triplet_from_paths(images_path, segs_path, res_path, ignore_non_matching=False):
-
-    ACCEPTABLE_IMAGE_FORMATS = [".jpg", ".jpeg", ".png" , ".bmp"]
-    ACCEPTABLE_SEGMENTATION_FORMATS = [".png", ".bmp"]
-
-    image_files = []
-    segmentation_files = {}
-    result_files = {}
-
-    for dir_entry in os.listdir(images_path):
-        if os.path.isfile(os.path.join(images_path, dir_entry)) and \
-                os.path.splitext(dir_entry)[1] in ACCEPTABLE_IMAGE_FORMATS:
-            file_name, file_extension = os.path.splitext(dir_entry)
-            image_files.append((file_name, file_extension, os.path.join(images_path, dir_entry)))
-
-    for dir_entry in os.listdir(segs_path):
-        if os.path.isfile(os.path.join(segs_path, dir_entry)) and \
-                os.path.splitext(dir_entry)[1] in ACCEPTABLE_SEGMENTATION_FORMATS:
-            file_name, file_extension = os.path.splitext(dir_entry)
-            if file_name in segmentation_files:
-                raise DataLoaderError("Segmentation file with filename {0} already exists and is ambiguous to resolve with path {1}. Please remove or rename the latter.".format(file_name, os.path.join(segs_path, dir_entry)))
-            segmentation_files[file_name] = (file_extension, os.path.join(segs_path, dir_entry))
-
-    for dir_entry in os.listdir(res_path):
-        if os.path.isfile(os.path.join(res_path, dir_entry)) and \
-                os.path.splitext(dir_entry)[1] in ACCEPTABLE_SEGMENTATION_FORMATS:
-            file_name, file_extension = os.path.splitext(dir_entry)
-            if file_name in result_files:
-                raise DataLoaderError("Segmentation file with filename {0} already exists and is ambiguous to resolve with path {1}. Please remove or rename the latter.".format(file_name, os.path.join(segs_path, dir_entry)))
-            result_files[file_name] = (file_extension, os.path.join(res_path, dir_entry))
-
-
-    return_value = []
-    # Match the images and segmentations
-    for image_file, _, image_full_path in image_files:
-        if (image_file in segmentation_files) & (image_file in result_files):
-            return_value.append((image_full_path, segmentation_files[image_file][1], result_files[image_file][1]))
-        elif ignore_non_matching:
-            continue
-        else:
-            # Error out
-            raise DataLoaderError("No corresponding segmentation found for image {0}.".format(image_full_path))
-
-    return return_value
-
-def get_image_array(image_input, width, height, imgNorm="sub_mean",
-                  ordering='channels_first'):
+def get_image_array(image_input, width, height):
     """ Load image array from input """
 
     if type(image_input) is np.ndarray:
         # It is already an array, use it as it is
         img = image_input
     elif  isinstance(image_input, six.string_types)  :
-        if not os.path.isfile(image_input):
-            raise DataLoaderError("get_image_array: path {0} doesn't exist".format(image_input))
         img = cv2.imread(image_input, 1)
-    else:
-        raise DataLoaderError("get_image_array: Can't process input type {0}".format(str(type(image_input))))
 
-    if imgNorm == "sub_and_divide":
-        img = np.float32(cv2.resize(img, (width, height))) / 127.5 - 1
-    elif imgNorm == "sub_mean":
-        img = cv2.resize(img, (width, height))
-        img = img.astype(np.float32)
-        img[:, :, 0] -= 103.939
-        img[:, :, 1] -= 116.779
-        img[:, :, 2] -= 123.68
-        img = img[:, :, ::-1]
-    elif imgNorm == "divide":
-        img = cv2.resize(img, (width, height))
-        img = img.astype(np.float32)
-        img = img/255.0
+    # resize image
+    img = cv2.resize(img, (width, height))
+    img = img.astype(np.float32)
+    img[:, :, 0] -= 103.939
+    img[:, :, 1] -= 116.779
+    img[:, :, 2] -= 123.68
+    img = img[:, :, ::-1]
 
-    if ordering == 'channels_first':
-        img = np.rollaxis(img, 2, 0)
     return img
-
 
 def get_segmentation_array(image_input, nClasses, width, height, no_reshape=False):
     """ Load segmentation array from input """
@@ -147,11 +47,7 @@ def get_segmentation_array(image_input, nClasses, width, height, no_reshape=Fals
         # It is already an array, use it as it is
         img = image_input
     elif isinstance(image_input, six.string_types) :
-        if not os.path.isfile(image_input):
-            raise DataLoaderError("get_segmentation_array: path {0} doesn't exist".format(image_input))
         img = cv2.imread(image_input, 1)
-    else:
-        raise DataLoaderError("get_segmentation_array: Can't process input type {0}".format(str(type(image_input))))
 
     img = cv2.resize(img, (width, height), interpolation=cv2.INTER_NEAREST)
     img = img[:, :, 0]
@@ -164,14 +60,20 @@ def get_segmentation_array(image_input, nClasses, width, height, no_reshape=Fals
 
     return seg_labels
 
-def image_segmentation_generator(images_path, segs_path, batch_size,
-                                 n_classes, input_height, input_width,
-                                 output_height, output_width,
-                                 do_augment=False):
+def data_generator(im_path, annot_path, batch_size,
+                  n_classes, height, width):
 
-    img_seg_pairs = get_pairs_from_paths(images_path, segs_path)
-    random.shuffle(img_seg_pairs)
-    zipped = itertools.cycle(img_seg_pairs)
+    images = glob.glob(im_path + "*.jpg") + glob.glob(im_path + "*.png") + glob.glob(im_path + "*.jpeg")
+    images.sort()
+    segmentations = glob.glob(annot_path + "*.jpg") + glob.glob(annot_path + "*.png") + glob.glob(annot_path + "*.jpeg")
+    segmentations.sort()
+
+    data = []
+    for i, j in zip(images,segmentations):
+        data.append((i,j))
+    
+    random.shuffle(data)
+    zipped = itertools.cycle(data)
 
     while True:
         X = []
@@ -182,12 +84,7 @@ def image_segmentation_generator(images_path, segs_path, batch_size,
             im = cv2.imread(im, 1)
             seg = cv2.imread(seg, 1)
 
-            if do_augment:
-                im, seg[:, :, 0] = augment_seg(im, seg[:, :, 0])
-
-            X.append(get_image_array(im, input_width,
-                                   input_height, ordering=IMAGE_ORDERING))
-            Y.append(get_segmentation_array(
-                seg, n_classes, output_width, output_height))
+            X.append(get_image_array(im, width, height))
+            Y.append(get_segmentation_array(seg, n_classes, width, height))
 
         yield np.array(X), np.array(Y)
