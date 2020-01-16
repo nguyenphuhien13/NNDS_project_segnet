@@ -3,6 +3,7 @@ from keras.models import *
 from keras.layers import *
 from types import MethodType
 from data_loader import *
+from models import *
 
 IMAGE_ORDERING = 'channels_last'
 
