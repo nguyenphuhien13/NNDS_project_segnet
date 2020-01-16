@@ -3,10 +3,7 @@ from keras.models import *
 from keras.layers import *
 from types import MethodType
 from data_loader import *
-
-import sys
-sys.path.append('drive/My Drive/NNDS/project/')
-from models import *
+from models import SegNet1, SegNet2, SegNet3
 
 IMAGE_ORDERING = 'channels_last'
 
