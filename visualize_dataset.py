@@ -4,9 +4,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from google.colab.patches import cv2_imshow
-
-import sys
-sys.path.append('drive/My Drive/NNDS/project/')
 from data_loader import DATA_LOADER_SEED, class_colors
 
 random.seed(DATA_LOADER_SEED)
