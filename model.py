@@ -16,21 +16,12 @@ def get_segmentation_model(input, output):
     o_shape = Model(img_input, o).output_shape
     i_shape = Model(img_input, o).input_shape
 
-    if IMAGE_ORDERING == 'channels_first':
-        output_height = o_shape[2]
-        output_width = o_shape[3]
-        input_height = i_shape[2]
-        input_width = i_shape[3]
-        n_classes = o_shape[1]
-        o = (Reshape((-1, output_height*output_width)))(o)
-        o = (Permute((2, 1)))(o)
-    elif IMAGE_ORDERING == 'channels_last':
-        output_height = o_shape[1]
-        output_width = o_shape[2]
-        input_height = i_shape[1]
-        input_width = i_shape[2]
-        n_classes = o_shape[3]
-        o = (Reshape((output_height*output_width, -1)))(o)
+    output_height = o_shape[1]
+    output_width = o_shape[2]
+    input_height = i_shape[1]
+    input_width = i_shape[2]
+    n_classes = o_shape[3]
+    o = (Reshape((output_height*output_width, -1)))(o)
 
     o = (Activation('softmax'))(o)
     model = Model(img_input, o)
@@ -54,34 +45,15 @@ def vanilla_encoder(input_height=224,  input_width=224):
     filter_size = 64
     pad = 1
     pool_size = 2
-
-    if IMAGE_ORDERING == 'channels_first':
-        img_input = Input(shape=(3, input_height, input_width))
-    elif IMAGE_ORDERING == 'channels_last':
-        img_input = Input(shape=(input_height, input_width, 3))
+    
+    img_input = Input(shape=(input_height, input_width, 3))
 
     x = img_input
     levels = []
-
-    x = (ZeroPadding2D((pad, pad), data_format=IMAGE_ORDERING))(x)
-    x = (Conv2D(filter_size, (kernel, kernel),
-                data_format=IMAGE_ORDERING, padding='valid'))(x)
-    x = (BatchNormalization())(x)
-    x = (Activation('relu'))(x)
-    x = (MaxPooling2D((pool_size, pool_size), data_format=IMAGE_ORDERING))(x)
-    levels.append(x)
-
-    x = (ZeroPadding2D((pad, pad), data_format=IMAGE_ORDERING))(x)
-    x = (Conv2D(128, (kernel, kernel), data_format=IMAGE_ORDERING,
-         padding='valid'))(x)
-    x = (BatchNormalization())(x)
-    x = (Activation('relu'))(x)
-    x = (MaxPooling2D((pool_size, pool_size), data_format=IMAGE_ORDERING))(x)
-    levels.append(x)
-
-    for _ in range(3):
+    
+    for n_filter in [64, 128, 256, 256, 256]:
         x = (ZeroPadding2D((pad, pad), data_format=IMAGE_ORDERING))(x)
-        x = (Conv2D(256, (kernel, kernel),
+        x = (Conv2D(n_filter, (kernel, kernel),
                     data_format=IMAGE_ORDERING, padding='valid'))(x)
         x = (BatchNormalization())(x)
         x = (Activation('relu'))(x)
@@ -91,7 +63,7 @@ def vanilla_encoder(input_height=224,  input_width=224):
 
     return img_input, levels
 
-def segnet_decoder(f, n_classes, n_up=5):
+def segnet_decoder(f, n_classes, n_up=3):
 
     assert n_up >= 2
 
@@ -100,22 +72,11 @@ def segnet_decoder(f, n_classes, n_up=5):
     o = (Conv2D(512, (3, 3), padding='valid', data_format=IMAGE_ORDERING))(o)
     o = (BatchNormalization())(o)
 
-    o = (UpSampling2D((2, 2), data_format=IMAGE_ORDERING))(o)
-    o = (ZeroPadding2D((1, 1), data_format=IMAGE_ORDERING))(o)
-    o = (Conv2D(256, (3, 3), padding='valid', data_format=IMAGE_ORDERING))(o)
-    o = (BatchNormalization())(o)
-
-    for _ in range(n_up-2):
+    for n_filter in [256, 128, 64]:
         o = (UpSampling2D((2, 2), data_format=IMAGE_ORDERING))(o)
         o = (ZeroPadding2D((1, 1), data_format=IMAGE_ORDERING))(o)
-        o = (Conv2D(128, (3, 3), padding='valid',
-             data_format=IMAGE_ORDERING))(o)
+        o = (Conv2D(n_filter, (3, 3), padding='valid',data_format=IMAGE_ORDERING))(o)
         o = (BatchNormalization())(o)
-
-    o = (UpSampling2D((2, 2), data_format=IMAGE_ORDERING))(o)
-    o = (ZeroPadding2D((1, 1), data_format=IMAGE_ORDERING))(o)
-    o = (Conv2D(64, (3, 3), padding='valid', data_format=IMAGE_ORDERING))(o)
-    o = (BatchNormalization())(o)
 
     o = Conv2D(n_classes, (3, 3), padding='same',
                data_format=IMAGE_ORDERING)(o)
