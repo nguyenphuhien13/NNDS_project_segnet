@@ -133,7 +133,7 @@ def segnet_decoder(f, n_classes):
     o = (Conv2D(512, (3, 3), padding='valid', data_format=IMAGE_ORDERING))(o)
     o = (BatchNormalization())(o)
 
-    for n_filter in [256, 128, 64]:
+    for n_filter in [256, 128, 128, 64]:
         o = (UpSampling2D((2, 2), data_format=IMAGE_ORDERING))(o)
         o = (ZeroPadding2D((1, 1), data_format=IMAGE_ORDERING))(o)
         o = (Conv2D(n_filter, (3, 3), padding='valid',data_format=IMAGE_ORDERING))(o)
