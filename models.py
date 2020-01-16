@@ -5,7 +5,6 @@ from keras.models import *
 from keras.layers import *
 from types import MethodType
 from train_and_predict import *
-from models import *
 
 IMAGE_ORDERING = 'channels_last'
 
