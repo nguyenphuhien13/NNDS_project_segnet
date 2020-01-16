@@ -121,6 +121,8 @@ def evaluate_segmentation(model, inp_images_dir=None, annotations_dir=None,
     images.sort()
     segmentations = glob.glob(annotations_dir + "*.jpg") + glob.glob(annotations_dir + "*.png") + glob.glob(annotations_dir + "*.jpeg")
     segmentations.sort()
+
+    n_classes = model.n_classes      
         
     tp = np.zeros(n_classes)
     fp = np.zeros(n_classes)
