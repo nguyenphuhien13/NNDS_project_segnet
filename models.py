@@ -114,7 +114,7 @@ def encoder(input_height=224,  input_width=224):
     x = img_input
     levels = []
     
-    for n_filter in [64, 128, 256, 256, 256]:
+    for n_filter in [64, 128, 256, 256, 512]:
         x = (ZeroPadding2D((pad, pad), data_format=IMAGE_ORDERING))(x)
         x = (Conv2D(n_filter, (kernel, kernel),
                     data_format=IMAGE_ORDERING, padding='valid'))(x)
