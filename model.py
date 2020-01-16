@@ -63,9 +63,7 @@ def vanilla_encoder(input_height=224,  input_width=224):
 
     return img_input, levels
 
-def segnet_decoder(f, n_classes, n_up=3):
-
-    assert n_up >= 2
+def segnet_decoder(f, n_classes):
 
     o = f
     o = (ZeroPadding2D((1, 1), data_format=IMAGE_ORDERING))(o)
@@ -91,7 +89,7 @@ def _segnet(n_classes, encoder,  input_height=416, input_width=608,
         input_height=input_height,  input_width=input_width)
 
     feat = levels[encoder_level]
-    o = segnet_decoder(feat, n_classes, n_up=3)
+    o = segnet_decoder(feat, n_classes)
     model = get_segmentation_model(img_input, o)
 
     return model
