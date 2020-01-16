@@ -62,8 +62,7 @@ def get_segmentation_array(image_input, nClasses, width, height, no_reshape=Fals
 
 def image_segmentation_generator(im_path, annot_path, batch_size,
                                  n_classes, input_height, input_width,
-                                 output_height, output_width,
-                                 do_augment=False):
+                                 output_height, output_width):
     
     images = glob.glob(im_path + "*.jpg") + glob.glob(im_path + "*.png") + glob.glob(im_path + "*.jpeg")
     images.sort()
@@ -85,9 +84,6 @@ def image_segmentation_generator(im_path, annot_path, batch_size,
 
             im = cv2.imread(im, 1)
             seg = cv2.imread(seg, 1)
-
-            if do_augment:
-                im, seg[:, :, 0] = augment_seg(im, seg[:, :, 0])
 
             X.append(get_image_array(im, input_width,
                                    input_height, ordering=IMAGE_ORDERING))
