@@ -85,9 +85,7 @@ def image_segmentation_generator(im_path, annot_path, batch_size,
             im = cv2.imread(im, 1)
             seg = cv2.imread(seg, 1)
 
-            X.append(get_image_array(im, input_width,
-                                   input_height, ordering=IMAGE_ORDERING))
-            Y.append(get_segmentation_array(
-                seg, n_classes, output_width, output_height))
+            X.append(get_image_array(im, input_width,input_height))
+            Y.append(get_segmentation_array(seg, n_classes, output_width, output_height))
 
         yield np.array(X), np.array(Y)        
