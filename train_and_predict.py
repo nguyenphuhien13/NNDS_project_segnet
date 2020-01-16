@@ -12,7 +12,6 @@ def train(model,
           input_height=None,
           input_width=None,
           n_classes=None,
-          checkpoints_path=None,
           epochs=6,
           batch_size=16,
           validate=False,
@@ -23,7 +22,8 @@ def train(model,
           steps_per_epoch=512,
           optimizer_name='adadelta'
           ):
-
+          
+    checkpoints_path = "drive/My Drive/NNDS/project/weights/segnet3_weights.h5"
     n_classes = model.n_classes
     input_height = model.input_height
     input_width = model.input_width
@@ -34,17 +34,6 @@ def train(model,
         model.compile(loss='categorical_crossentropy',
                       optimizer=optimizer_name,
                       metrics=['accuracy'])
-
-    if checkpoints_path is not None:
-        with open(checkpoints_path+"_config.json", "w") as f:
-            json.dump({
-                "model_class": model.model_name,
-                "n_classes": n_classes,
-                "input_height": input_height,
-                "input_width": input_width,
-                "output_height": output_height,
-                "output_width": output_width
-            }, f)
 
     if load_weights is not None and len(load_weights) > 0:
         print("Loading weights from ", load_weights)
@@ -65,9 +54,7 @@ def train(model,
             model.fit_generator(train_gen, steps_per_epoch, epochs=1,
                                 workers=-1,
                                 use_multiprocessing=True)
-            if checkpoints_path is not None:
-                model.save_weights(checkpoints_path + "_" + str(ep))
-                print("saved ", checkpoints_path + ".model." + str(ep))
+            model.save_weights(checkpoints_path)
             print("Finished Epoch", ep)
     else:
         for ep in range(epochs):
@@ -77,21 +64,14 @@ def train(model,
                                 validation_steps=200,  epochs=1,
                                 workers=-1,
                                 use_multiprocessing=True)
-            if checkpoints_path is not None:
-                model.save_weights(checkpoints_path + "_" + str(ep))
-                print("saved ", checkpoints_path + ".model." + str(ep))
+            model.save_weights(checkpoints_path)
             print("Finished Epoch", ep)
 
-
-def predict(model=None, inp=None, out_fname=None, checkpoints_path=None):
-
-    if model is None and (checkpoints_path is not None):
-        model = model_from_checkpoint_path(checkpoints_path)
-
+def predict(model = None, inp=None, out_fname=None, input_height = 416, input_width = 608, colors = class_colors):
+    
     if isinstance(inp, six.string_types):
         inp = cv2.imread(inp)
 
-    assert len(inp.shape) == 3, "Image should be h,w,3 "
     orininal_h = inp.shape[0]
     orininal_w = inp.shape[1]
 
@@ -103,10 +83,9 @@ def predict(model=None, inp=None, out_fname=None, checkpoints_path=None):
 
     x = get_image_array(inp, input_width, input_height)
     pr = model.predict(np.array([x]))[0]
-    pr = pr.reshape((output_height,  output_width, n_classes)).argmax(axis=2)
+    pr = pr.reshape((output_height, output_width, n_classes)).argmax(axis=2)
 
     seg_img = np.zeros((output_height, output_width, 3))
-    colors = class_colors
 
     for c in range(n_classes):
         seg_img[:, :, 0] += ((pr[:, :] == c)*(colors[c][0])).astype('uint8')
@@ -120,38 +99,62 @@ def predict(model=None, inp=None, out_fname=None, checkpoints_path=None):
 
     return pr
 
-def evaluate(model=None, inp_images_dir=None ,annotations_dir=None, checkpoints_path=None ):
+def predict_segmentation(model, input_height = 416, input_width = 608):
+    ## load model
+    if model == 'model_1':
+        model = SegNet1(n_classes=11 , input_height=input_height, input_width=input_width)
+    elif model == 'model_2':
+        model = SegNet2(n_classes=11 , input_height=input_height, input_width=input_width)
+    else:
+        model = SegNet3(n_classes=11 , input_height=input_height, input_width=input_width, encoder_level = 3)
     
-    if model is None:
-        model = model_from_checkpoint_path(checkpoints_path)
+    model.load_weights("drive/My Drive/NNDS/project/weights/segnet3_weights.h5")
+
+    test_folder = glob.glob('drive/My Drive/NNDS/project/CamVid/test/*.png')
+    for file in tqdm(test_folder):
+        file_name = file.split('/')[-1]
+        out = predict(model,
+                      inp=file,
+                      out_fname=f"drive/My Drive/NNDS/project/CamVid/Predictions/{file_name}")
+
+def evaluate_segmentation(model = 'model_3', inp_images_dir=None, annotations_dir=None,
+                          img_height = 416, img_width = 618):
+
+    if model == 'model_1':
+        model = SegNet1(n_classes=11 , input_height=img_height, input_width=img_width)
+    elif model == 'model_2':
+        model = SegNet2(n_classes=11 , input_height=img_height, input_width=img_width)
+    else:
+        model = SegNet3(n_classes=11 , input_height=img_height, input_width=img_width, encoder_level = 3)
+    
+    model.load_weights("drive/My Drive/NNDS/project/weights/segnet3_weights.h5")
         
     images = glob.glob(inp_images_dir + "*.jpg") + glob.glob(inp_images_dir + "*.png") + glob.glob(inp_images_dir + "*.jpeg")
     images.sort()
     segmentations = glob.glob(annotations_dir + "*.jpg") + glob.glob(annotations_dir + "*.png") + glob.glob(annotations_dir + "*.jpeg")
-    segmentations.sort()      
+    segmentations.sort()
         
-    tp = np.zeros( model.n_classes  )
-    fp = np.zeros( model.n_classes  )
-    fn = np.zeros( model.n_classes  )
-    n_pixels = np.zeros( model.n_classes  )
+    tp = np.zeros(n_classes)
+    fp = np.zeros(n_classes)
+    fn = np.zeros(n_classes)
+    n_pixels = np.zeros(n_classes)
     
-    for inp , ann   in tqdm( zip( images , segmentations )):
-        pr = predict(model , inp )
-        gt = get_segmentation_array( ann , model.n_classes ,  model.output_width , model.output_height , no_reshape=True)
+    for inp, ann in tqdm(zip(images, segmentations)):
+        pr = predict(model, inp)
+        gt = get_segmentation_array(ann, n_classes, model.output_width, model.output_height, no_reshape=True)
         gt = gt.argmax(-1)
         pr = pr.flatten()
         gt = gt.flatten()
                 
-        for cl_i in range(model.n_classes):
+        for cl_i in range(n_classes):
             
-            tp[ cl_i ] += np.sum( (pr == cl_i) * (gt == cl_i) )
-            fp[ cl_i ] += np.sum( (pr == cl_i) * ((gt != cl_i)) )
-            fn[ cl_i ] += np.sum( (pr != cl_i) * ((gt == cl_i)) )
-            n_pixels[ cl_i ] += np.sum( gt == cl_i  )
+            tp[ cl_i ] += np.sum((pr == cl_i) * (gt == cl_i))
+            fp[ cl_i ] += np.sum((pr == cl_i) * ((gt != cl_i)))
+            fn[ cl_i ] += np.sum((pr != cl_i) * ((gt == cl_i)))
+            n_pixels[cl_i] += np.sum(gt == cl_i)
             
     cl_wise_score = tp / ( tp + fp + fn + 0.000000000001 )
-    n_pixels_norm = n_pixels /  np.sum(n_pixels)
+    n_pixels_norm = n_pixels/np.sum(n_pixels)
     frequency_weighted_IU = np.sum(cl_wise_score*n_pixels_norm)
     mean_IU = np.mean(cl_wise_score)
     return {"frequency_weighted_IU":frequency_weighted_IU , "mean_IU":mean_IU , "class_wise_IU":cl_wise_score }
-
