@@ -21,7 +21,7 @@ def train(model,
           val_batch_size=32,
           load_weights=None,
           steps_per_epoch=512,
-          optimizer_name='adadelta' , do_augment=False 
+          optimizer_name='adadelta'
           ):
 
     n_classes = model.n_classes
@@ -29,10 +29,6 @@ def train(model,
     input_width = model.input_width
     output_height = model.output_height
     output_width = model.output_width
-
-    if validate:
-        assert val_images is not None
-        assert val_annotations is not None
 
     if optimizer_name is not None:
         model.compile(loss='categorical_crossentropy',
@@ -56,7 +52,7 @@ def train(model,
 
     train_gen = image_segmentation_generator(
         train_images, train_annotations,  batch_size,  n_classes,
-        input_height, input_width, output_height, output_width , do_augment=do_augment )
+        input_height, input_width, output_height, output_width)
 
     if validate:
         val_gen = image_segmentation_generator(
@@ -92,10 +88,6 @@ def predict(model=None, inp=None, out_fname=None, checkpoints_path=None):
     if model is None and (checkpoints_path is not None):
         model = model_from_checkpoint_path(checkpoints_path)
 
-    assert (inp is not None)
-    assert((type(inp) is np.ndarray) or isinstance(inp, six.string_types)
-           ), "Inupt should be the CV image or the input file name"
-
     if isinstance(inp, six.string_types):
         inp = cv2.imread(inp)
 
@@ -128,30 +120,22 @@ def predict(model=None, inp=None, out_fname=None, checkpoints_path=None):
 
     return pr
 
-def evaluate( model=None , inp_images=None , annotations=None,inp_images_dir=None ,annotations_dir=None , checkpoints_path=None ):
+def evaluate(model=None, inp_images_dir=None ,annotations_dir=None, checkpoints_path=None ):
     
     if model is None:
-        assert (checkpoints_path is not None) , "Please provide the model or the checkpoints_path"
         model = model_from_checkpoint_path(checkpoints_path)
         
-    if inp_images is None:
-        assert (inp_images_dir is not None) , "Please provide inp_images or inp_images_dir"
-        assert (annotations_dir is not None) , "Please provide inp_images or inp_images_dir"
-        
-        paths = get_pairs_from_paths(inp_images_dir , annotations_dir )
-        paths = list(zip(*paths))
-        inp_images = list(paths[0])
-        annotations = list(paths[1])
-        
-    assert type(inp_images) is list
-    assert type(annotations) is list
+    images = glob.glob(inp_images_dir + "*.jpg") + glob.glob(inp_images_dir + "*.png") + glob.glob(inp_images_dir + "*.jpeg")
+    images.sort()
+    segmentations = glob.glob(annotations_dir + "*.jpg") + glob.glob(annotations_dir + "*.png") + glob.glob(annotations_dir + "*.jpeg")
+    segmentations.sort()      
         
     tp = np.zeros( model.n_classes  )
     fp = np.zeros( model.n_classes  )
     fn = np.zeros( model.n_classes  )
     n_pixels = np.zeros( model.n_classes  )
     
-    for inp , ann   in tqdm( zip( inp_images , annotations )):
+    for inp , ann   in tqdm( zip( images , segmentations )):
         pr = predict(model , inp )
         gt = get_segmentation_array( ann , model.n_classes ,  model.output_width , model.output_height , no_reshape=True)
         gt = gt.argmax(-1)
