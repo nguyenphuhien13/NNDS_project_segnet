@@ -99,13 +99,10 @@ def get_segmentation_model(input, output):
     model.model_name = ""
 
     model.train = MethodType(train, model)
-    model.predict_segmentation = MethodType(predict, model)
-    model.evaluate_segmentation = MethodType(evaluate, model)
-
     return model
 
 
-def vanilla_encoder(input_height=224,  input_width=224):
+def encoder(input_height=224,  input_width=224):
 
     kernel = 3
     filter_size = 64
@@ -163,7 +160,7 @@ def _segnet(n_classes, encoder,  input_height=416, input_width=608,
 
 def SegNet3(n_classes, input_height=416, input_width=608, encoder_level=3):
 
-    model = _segnet(n_classes, vanilla_encoder, input_height=input_height,
+    model = _segnet(n_classes, encoder, input_height=input_height,
                     input_width=input_width, encoder_level=encoder_level)
     model.model_name = "segnet"
     return model
