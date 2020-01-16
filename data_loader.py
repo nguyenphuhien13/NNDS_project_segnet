@@ -60,7 +60,7 @@ def get_segmentation_array(image_input, nClasses, width, height, no_reshape=Fals
 
     return seg_labels
 
-def image_segmentation_generator(images_path, segs_path, batch_size,
+def image_segmentation_generator(im_path, annot_path, batch_size,
                                  n_classes, input_height, input_width,
                                  output_height, output_width,
                                  do_augment=False):
