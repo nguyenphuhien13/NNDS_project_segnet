@@ -60,9 +60,11 @@ def get_segmentation_array(image_input, nClasses, width, height, no_reshape=Fals
 
     return seg_labels
 
-def data_generator(im_path, annot_path, batch_size,
-                  n_classes, height, width):
-
+def image_segmentation_generator(images_path, segs_path, batch_size,
+                                 n_classes, input_height, input_width,
+                                 output_height, output_width,
+                                 do_augment=False):
+    
     images = glob.glob(im_path + "*.jpg") + glob.glob(im_path + "*.png") + glob.glob(im_path + "*.jpeg")
     images.sort()
     segmentations = glob.glob(annot_path + "*.jpg") + glob.glob(annot_path + "*.png") + glob.glob(annot_path + "*.jpeg")
@@ -84,7 +86,12 @@ def data_generator(im_path, annot_path, batch_size,
             im = cv2.imread(im, 1)
             seg = cv2.imread(seg, 1)
 
-            X.append(get_image_array(im, width, height))
-            Y.append(get_segmentation_array(seg, n_classes, width, height))
+            if do_augment:
+                im, seg[:, :, 0] = augment_seg(im, seg[:, :, 0])
 
-        yield np.array(X), np.array(Y)
+            X.append(get_image_array(im, input_width,
+                                   input_height, ordering=IMAGE_ORDERING))
+            Y.append(get_segmentation_array(
+                seg, n_classes, output_width, output_height))
+
+        yield np.array(X), np.array(Y)        
