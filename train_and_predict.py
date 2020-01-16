@@ -3,7 +3,6 @@ from keras.models import *
 from keras.layers import *
 from types import MethodType
 from data_loader import *
-from models import SegNet1, SegNet2, SegNet3
 
 IMAGE_ORDERING = 'channels_last'
 
@@ -100,16 +99,10 @@ def predict(model = None, inp=None, out_fname=None, input_height = 416, input_wi
 
     return pr
 
-def predict_segmentation(model, input_height = 416, input_width = 608):
+def predict_segmentation(model, input_height = 416, input_width = 608, 
+                         path = "drive/My Drive/NNDS/project/weights/segnet3_weights.h5"):
     ## load model
-    if model == 'model_1':
-        model = SegNet1(n_classes=11 , input_height=input_height, input_width=input_width)
-    elif model == 'model_2':
-        model = SegNet2(n_classes=11 , input_height=input_height, input_width=input_width)
-    else:
-        model = SegNet3(n_classes=11 , input_height=input_height, input_width=input_width, encoder_level = 3)
-    
-    model.load_weights("drive/My Drive/NNDS/project/weights/segnet3_weights.h5")
+    model.load_weights(path)
 
     test_folder = glob.glob('drive/My Drive/NNDS/project/CamVid/test/*.png')
     for file in tqdm(test_folder):
@@ -118,17 +111,11 @@ def predict_segmentation(model, input_height = 416, input_width = 608):
                       inp=file,
                       out_fname=f"drive/My Drive/NNDS/project/CamVid/Predictions/{file_name}")
 
-def evaluate_segmentation(model = 'model_3', inp_images_dir=None, annotations_dir=None,
-                          img_height = 416, img_width = 618):
-
-    if model == 'model_1':
-        model = SegNet1(n_classes=11 , input_height=img_height, input_width=img_width)
-    elif model == 'model_2':
-        model = SegNet2(n_classes=11 , input_height=img_height, input_width=img_width)
-    else:
-        model = SegNet3(n_classes=11 , input_height=img_height, input_width=img_width, encoder_level = 3)
+def evaluate_segmentation(model, inp_images_dir=None, annotations_dir=None,
+                          img_height = 416, img_width = 618,
+                          path = "drive/My Drive/NNDS/project/weights/segnet3_weights.h5"):
     
-    model.load_weights("drive/My Drive/NNDS/project/weights/segnet3_weights.h5")
+    model.load_weights(path)
         
     images = glob.glob(inp_images_dir + "*.jpg") + glob.glob(inp_images_dir + "*.png") + glob.glob(inp_images_dir + "*.jpeg")
     images.sort()
